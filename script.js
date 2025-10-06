@@ -1,51 +1,70 @@
-const uploadForm = document.getElementById("uploadForm");
-const fileInput = document.getElementById("fileInput");
-const statusText = document.getElementById("status");
+document.addEventListener("DOMContentLoaded", function () {
+  const uploadForm = document.getElementById("uploadForm");
+  const fileInput = document.getElementById("fileInput");
+  const statusDiv = document.getElementById("status");
 
-// 🧠 Replace this with your actual Lambda Function URL
-const LAMBDA_URL =
-  "https://wbak63g32mlhfel2743vpspha40brlml.lambda-url.eu-west-1.on.aws/";
+  uploadForm.addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-uploadForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const file = fileInput.files[0];
-  if (!file) {
-    statusText.textContent = "Please select a file first.";
-    return;
-  }
-
-  statusText.textContent = "Generating upload link...";
-
-  try {
-    // Request pre-signed URL from Lambda
-    const response = await fetch(LAMBDA_URL);
-    const data = await response.json();
-
-    if (!data.uploadUrl) {
-      throw new Error("Failed to get upload URL.");
+    if (!fileInput.files[0]) {
+      statusDiv.innerHTML = "❌ Please select a file first!";
+      return;
     }
 
-    const uploadUrl = data.uploadUrl;
+    const file = fileInput.files[0];
+    const filename = file.name; // Get the actual filename
 
-    statusText.textContent = "Uploading to S3...";
+    statusDiv.innerHTML = `📤 Uploading "${filename}"...`;
 
-    // Upload file directly to S3
-    const uploadResponse = await fetch(uploadUrl, {
-      method: "PUT",
-      body: file,
-      headers: {
-        "Content-Type": file.type || "application/octet-stream",
-      },
-    });
+    try {
+      // Step 1: Get presigned URL with the actual filename
+      console.log("Requesting presigned URL for:", filename);
 
-    if (uploadResponse.ok) {
-      statusText.textContent = "✅ Upload successful!";
-    } else {
-      throw new Error("Upload failed.");
+      const response = await fetch(
+        "https://wbak63g32mlhfel2743vpspha40brlml.lambda-url.eu-west-1.on.aws/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            filename: filename, // Pass the actual filename here
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to get upload URL: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Got presigned URL data:", data);
+
+      // Step 2: Upload the file to S3
+      statusDiv.innerHTML = `📤 Uploading "${filename}" to S3...`;
+
+      const uploadResponse = await fetch(data.uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+        },
+      });
+
+      if (uploadResponse.ok) {
+        statusDiv.innerHTML = `✅ File "${filename}" uploaded successfully!`;
+        console.log("Upload successful!");
+
+        // Reset form
+        fileInput.value = "";
+      } else {
+        throw new Error(
+          `Upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`
+        );
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      statusDiv.innerHTML = `❌ Upload failed: ${error.message}`;
     }
-  } catch (err) {
-    console.error(err);
-    statusText.textContent = "❌ Error: " + err.message;
-  }
+  });
 });
