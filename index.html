@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cloud of Witnesses Upload</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>☁️ Cloud of Witnesses</h1>
+      <p>Upload your file securely to the cloud</p>
+
+      <form id="uploadForm">
+        <input
+          type="file"
+          id="fileInput"
+          accept=".txt,.pdf,.jpg,.png,.mp4"
+          required
+        />
+        <button type="submit">Upload File</button>
+      </form>
+
+      <p id="status"></p>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
